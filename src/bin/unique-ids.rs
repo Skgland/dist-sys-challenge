@@ -31,7 +31,12 @@ impl Payload for ResponseMessages {}
 impl Node for UniqueIdsNode {
     type Msg = RequestMessages;
 
-    fn new(Init::Init { node_id, node_ids }: dist_sys_challenge::Init) -> Self {
+    fn new(
+        Init::Init {
+            node_id,
+            node_ids: _,
+        }: dist_sys_challenge::Init,
+    ) -> Self {
         Self {
             msg_seq_id: 1,
             node_id,
