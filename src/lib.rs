@@ -4,7 +4,7 @@ use std::{
     io::{stdin, stdout},
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message<P> {
     src: String,
     #[serde(rename = "dest")]
@@ -15,7 +15,23 @@ pub struct Message<P> {
 pub trait Payload {}
 
 impl<P: Payload> Message<P> {
-    fn respond_error<W: Write>(
+    pub fn new(src: String, dst: String, msg_id: Option<&mut usize>, payload: P) -> Self {
+        Message {
+            src,
+            dst,
+            body: Body {
+                msg_id: msg_id.map(|id| {
+                    let mid = *id;
+                    *id += 1;
+                    mid
+                }),
+                in_reply_to: None,
+                payload,
+            },
+        }
+    }
+
+    pub fn respond_error<W: Write>(
         &self,
         writer: &mut W,
         code: ErrorCode,
@@ -55,6 +71,10 @@ impl<P: Payload> Message<P> {
         .send(writer)
     }
 
+    pub fn src(&self) -> &str {
+        &self.src
+    }
+
     pub fn send<W: Write>(self, writer: &mut W) -> std::io::Result<()>
     where
         Self: Serialize,
@@ -68,7 +88,7 @@ impl<P: Payload> Message<P> {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct Body<P> {
     msg_id: Option<usize>,
     in_reply_to: Option<usize>,
