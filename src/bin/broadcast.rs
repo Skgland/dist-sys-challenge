@@ -173,7 +173,7 @@ impl Node for BroadcastNode {
         std::thread::spawn(|| processor(init, receiver));
         std::thread::spawn(move || -> std::io::Result<()> {
             loop {
-                std::thread::sleep(Duration::from_millis(250));
+                std::thread::sleep(Duration::from_millis(50));
                 sender_clone
                     .send(Action::Gossip)
                     .map_err(|err| std::io::Error::new(std::io::ErrorKind::BrokenPipe, err))?;
