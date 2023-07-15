@@ -45,3 +45,29 @@ fn broadcast_multiple() {
     ]);
     assert!(cmd.spawn().unwrap().wait().unwrap().success())
 }
+
+#[test]
+fn broadcast_fault_tolerant() {
+    const BIN: &str = std::env!("CARGO_BIN_EXE_broadcast");
+    println!("CWD: {}", std::env::current_dir().unwrap().display());
+    println!("BIN: {BIN}");
+
+    let mut cmd = std::process::Command::new("bash");
+    cmd.args([
+        "maelstrom/maelstrom",
+        "test",
+        "-w",
+        "broadcast",
+        "--bin",
+        BIN,
+        "--node-count",
+        "5",
+        "--time-limit",
+        "20",
+        "--rate",
+        "10",
+        "--nemesis",
+        "partition",
+    ]);
+    assert!(cmd.spawn().unwrap().wait().unwrap().success())
+}
