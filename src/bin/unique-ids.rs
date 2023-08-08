@@ -1,6 +1,6 @@
 use std::io::stdout;
 
-use dist_sys_challenge::{Init, Node, Payload};
+use dist_sys_challenge::{Init, MsgId, Node, NodeId, Payload};
 use serde::{Deserialize, Serialize};
 
 fn main() -> std::io::Result<()> {
@@ -8,8 +8,8 @@ fn main() -> std::io::Result<()> {
 }
 
 struct UniqueIdsNode {
-    msg_seq_id: usize,
-    node_id: String,
+    msg_seq_id: MsgId,
+    node_id: NodeId,
 }
 
 #[derive(Debug, Deserialize)]
@@ -38,7 +38,7 @@ impl Node for UniqueIdsNode {
         }: dist_sys_challenge::Init,
     ) -> Self {
         Self {
-            msg_seq_id: 1,
+            msg_seq_id: MsgId::ONE,
             node_id,
         }
     }

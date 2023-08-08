@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use dist_sys_challenge::{Init, Message, Node, Payload};
+use dist_sys_challenge::{Init, Message, MsgId, Node, NodeId, Payload};
 use serde::{Deserialize, Serialize};
 
 fn main() -> std::io::Result<()> {
@@ -24,14 +24,19 @@ enum RequestMessages {
     },
     Read {},
     Topology {
-        topology: HashMap<String, Vec<String>>,
+        topology: HashMap<NodeId, Vec<NodeId>>,
     },
     Gossip {
-        // sender knows but belives we don't know
-        new: Vec<usize>,
-        // sender knwows we know, but we have send them recently
-        verified: Vec<usize>,
+        news: Vec<News>,
     },
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+enum News {
+    // sender knows but belives we don't know
+    NewValue(usize),
+    // sender knwows we know, but we have send them recently (we didn't knew they knew)
+    VerifiedValue(usize),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -48,15 +53,10 @@ impl Payload for RequestMessages {}
 #[serde(tag = "type", rename_all = "snake_case")]
 enum ResponseMessages {
     BroadcastOk {},
-    ReadOk {
-        messages: Vec<usize>,
-    },
+    ReadOk { messages: Vec<usize> },
     TopologyOk {},
     // See RequestMessages
-    Gossip {
-        new: Vec<usize>,
-        verified: Vec<usize>,
-    },
+    Gossip { news: Vec<News> },
 }
 
 impl Payload for ResponseMessages {}
@@ -73,9 +73,9 @@ fn processor(
     }: Init,
     channel: Receiver<Action>,
 ) -> std::io::Result<()> {
-    let mut msg_seq_id = 1;
+    let mut msg_seq_id = MsgId::ONE;
     let mut seen = HashSet::<usize>::new();
-    let mut knowledge = HashMap::<(String, usize), Knowledge>::new();
+    let mut knowledge = HashMap::<(NodeId, usize), Knowledge>::new();
 
     for action in channel {
         match action {
@@ -108,50 +108,35 @@ fn processor(
                         ResponseMessages::TopologyOk {},
                     )?;
                 }
-                RequestMessages::Gossip { new, verified } => {
-                    seen.extend(new.iter().copied());
-                    new.iter().for_each(|&verified| {
-                        knowledge.insert(
-                            (request.src().to_owned(), verified),
-                            Knowledge::ToBeConfirmed,
-                        );
-                    });
-                    verified.into_iter().for_each(|&verified| {
-                        knowledge
-                            .insert((request.src().to_owned(), verified), Knowledge::Confirmed);
+                RequestMessages::Gossip { news } => {
+                    news.iter().for_each(|news| {
+                        let (val, kind) = match news {
+                            News::NewValue(val) => (*val, Knowledge::ToBeConfirmed),
+                            News::VerifiedValue(val) => (*val, Knowledge::Confirmed),
+                        };
+                        seen.insert(val);
+                        knowledge.insert((request.src().to_owned(), val), kind);
                     });
                 }
             },
             Action::Gossip => {
                 for neighbor in &neighbors {
-                    let new = seen
+                    let news = seen
                         .iter()
                         .copied()
-                        .filter(|&value| !knowledge.contains_key(&(neighbor.clone(), value)))
-                        .collect::<Vec<_>>();
-
-                    let verified = seen
-                        .iter()
-                        .copied()
-                        .filter(|&value| {
-                            knowledge.get_mut(&(neighbor.clone(), value)).map_or(
-                                false,
-                                |knowledge| {
-                                    let cond = knowledge == &Knowledge::ToBeConfirmed;
-                                    // if thies gets lost its fine, as the otehr side will just inform us again about a new value
-                                    *knowledge = Knowledge::Confirmed;
-                                    cond
-                                },
-                            )
+                        .filter_map(|value| match knowledge.get(&(neighbor.clone(), value)) {
+                            Some(Knowledge::ToBeConfirmed) => Some(News::VerifiedValue(value)),
+                            Some(Knowledge::Confirmed) => None,
+                            None => Some(News::NewValue(value)),
                         })
                         .collect::<Vec<_>>();
 
-                    if !new.is_empty() || !verified.is_empty() {
+                    if !news.is_empty() {
                         Message::new(
                             node_id.clone(),
                             neighbor.to_owned(),
                             Some(&mut msg_seq_id),
-                            ResponseMessages::Gossip { new, verified },
+                            ResponseMessages::Gossip { news },
                         )
                         .send(&mut stdout())?;
                     }

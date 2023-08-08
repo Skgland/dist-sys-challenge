@@ -1,4 +1,7 @@
+use serial_test::serial;
+
 #[test]
+#[serial]
 fn unique_ids() {
     const BIN: &str = std::env!("CARGO_BIN_EXE_unique-ids");
     println!("CWD: {}", std::env::current_dir().unwrap().display());

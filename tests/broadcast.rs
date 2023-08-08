@@ -1,4 +1,7 @@
+use serial_test::serial;
+
 #[test]
+#[serial]
 fn broadcast_single() {
     const BIN: &str = std::env!("CARGO_BIN_EXE_broadcast");
     println!("CWD: {}", std::env::current_dir().unwrap().display());
@@ -23,6 +26,7 @@ fn broadcast_single() {
 }
 
 #[test]
+#[serial]
 fn broadcast_multiple() {
     const BIN: &str = std::env!("CARGO_BIN_EXE_broadcast");
     println!("CWD: {}", std::env::current_dir().unwrap().display());
@@ -47,6 +51,7 @@ fn broadcast_multiple() {
 }
 
 #[test]
+#[serial]
 fn broadcast_fault_tolerant() {
     const BIN: &str = std::env!("CARGO_BIN_EXE_broadcast");
     println!("CWD: {}", std::env::current_dir().unwrap().display());
@@ -77,7 +82,8 @@ fn broadcast_fault_tolerant() {
 // messeges-per-op or the stable-latency is within parameters
 
 #[test]
-fn broadcast_efficiancy_1() {
+#[serial]
+fn broadcast_efficiancy_1_no_faults() {
     const BIN: &str = std::env!("CARGO_BIN_EXE_broadcast");
     println!("CWD: {}", std::env::current_dir().unwrap().display());
     println!("BIN: {BIN}");
@@ -103,6 +109,7 @@ fn broadcast_efficiancy_1() {
 }
 
 #[test]
+#[serial]
 fn broadcast_efficiancy_1_fault_tolerant() {
     const BIN: &str = std::env!("CARGO_BIN_EXE_broadcast");
     println!("CWD: {}", std::env::current_dir().unwrap().display());

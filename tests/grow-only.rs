@@ -2,8 +2,8 @@ use serial_test::serial;
 
 #[test]
 #[serial]
-fn echo() {
-    const BIN: &str = std::env!("CARGO_BIN_EXE_echo");
+fn grow_only() {
+    const BIN: &str = std::env!("CARGO_BIN_EXE_grow-only");
     println!("CWD: {}", std::env::current_dir().unwrap().display());
     println!("BIN: {BIN}");
 
@@ -12,13 +12,17 @@ fn echo() {
         "maelstrom/maelstrom",
         "test",
         "-w",
-        "echo",
+        "g-counter",
         "--bin",
         BIN,
         "--node-count",
-        "1",
+        "3",
+        "--rate",
+        "100",
         "--time-limit",
-        "10",
+        "20",
+        "--nemesis",
+        "partition",
     ]);
     assert!(cmd.spawn().unwrap().wait().unwrap().success())
 }

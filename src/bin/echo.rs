@@ -1,6 +1,6 @@
 use std::io::stdout;
 
-use dist_sys_challenge::{Node, Payload};
+use dist_sys_challenge::{MsgId, Node, Payload};
 use serde::{Deserialize, Serialize};
 
 fn main() -> std::io::Result<()> {
@@ -8,7 +8,7 @@ fn main() -> std::io::Result<()> {
 }
 
 struct EchoNode {
-    msg_seq_id: usize,
+    msg_seq_id: MsgId,
 }
 
 #[derive(Debug, Deserialize)]
@@ -31,7 +31,9 @@ impl Node for EchoNode {
     type Msg = EchoMessages;
 
     fn new(_: dist_sys_challenge::Init) -> Self {
-        Self { msg_seq_id: 1 }
+        Self {
+            msg_seq_id: MsgId::ONE,
+        }
     }
 
     fn process(&mut self, request: &dist_sys_challenge::Message<Self::Msg>) -> std::io::Result<()> {
